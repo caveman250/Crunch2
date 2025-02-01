@@ -137,15 +137,18 @@ namespace crnlib
     {
         maximumCount, pName;
         CRNLIB_ASSERT(maximumCount >= initialCount);
-        if (sem_init(&m_sem, 0, initialCount))
+
+        auto sem = sem_open("semaphore", O_CREAT, 0777, initialCount);
+        if (!sem)
         {
             CRNLIB_FAIL("semaphore: sem_init() failed");
         }
+        m_sem = sem;
     }
 
     semaphore::~semaphore()
     {
-        sem_destroy(&m_sem);
+        sem_close(m_sem);
     }
 
     void semaphore::release(long releaseCount)
@@ -156,16 +159,16 @@ namespace crnlib
 #ifdef WIN32
         if (1 == releaseCount)
         {
-            status = sem_post(&m_sem);
+            status = sem_post(m_sem);
         }
         else
         {
-            status = sem_post_multiple(&m_sem, releaseCount);
+            status = sem_post_multiple(m_sem, releaseCount);
         }
 #else
         while (releaseCount > 0)
         {
-            status = sem_post(&m_sem);
+            status = sem_post(m_sem);
             if (status)
             {
                 break;
@@ -187,16 +190,16 @@ namespace crnlib
 #ifdef WIN32
         if (1 == releaseCount)
         {
-            sem_post(&m_sem);
+            sem_post(m_sem);
         }
         else
         {
-            sem_post_multiple(&m_sem, releaseCount);
+            sem_post_multiple(m_sem, releaseCount);
         }
 #else
         while (releaseCount > 0)
         {
-            sem_post(&m_sem);
+            sem_post(m_sem);
             releaseCount--;
         }
 #endif
@@ -207,14 +210,14 @@ namespace crnlib
         int status;
         if (milliseconds == cUINT32_MAX)
         {
-            status = sem_wait(&m_sem);
+            status = sem_wait(m_sem);
         }
         else
         {
             struct timespec interval;
             interval.tv_sec = milliseconds / 1000;
             interval.tv_nsec = (milliseconds % 1000) * 1000000L;
-            status = sem_timedwait(&m_sem, &interval);
+            status = sem_timedwait(m_sem, &interval);
         }
 
         if (status)

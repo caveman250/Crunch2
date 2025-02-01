@@ -108,7 +108,7 @@ namespace crnlib
         bool wait(uint32 milliseconds = cUINT32_MAX);
 
     private:
-        sem_t m_sem;
+        sem_t* m_sem;
     };
 
     class CRN_EXPORT spinlock
